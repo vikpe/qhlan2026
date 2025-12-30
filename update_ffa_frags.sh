@@ -30,7 +30,7 @@ fi
 # run whenever a .txt is created in the current dir
 inotifywait -m -e close_write --format "%f" "." | while read FILE
 do
-    if [[ "$FILE" == *.txt ]]; then
+    if [[ "$FILE" == ffa_*.txt ]]; then
         # summarize frags per player
         jq -s '[.[] | .players[] | {name: .name, frags: .stats.frags}] |
             group_by(.name) |
