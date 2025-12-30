@@ -27,7 +27,7 @@ if ! command -v inotifywait &> /dev/null; then
     sudo apt install -y inotify-tools
 fi
 
-# run whenever a .txt is created in the current dir
+# run whenever a ffa_*.txt is created in the current dir
 inotifywait -m -e close_write --format "%f" "." | while read FILE
 do
     if [[ "$FILE" == ffa_*.txt ]]; then
@@ -36,7 +36,7 @@ do
             group_by(.name) |
             map({name: .[0].name, frags: map(.frags) | add})
             | sort_by(.frags) | reverse
-        ' *.txt > ffa_frags.json
+        ' ffa_*.txt > ffa_frags.json
 
         # upload to aws s3
         # public url: https://qhlan2026.s3.eu-north-1.amazonaws.com/ffa_frags.json
