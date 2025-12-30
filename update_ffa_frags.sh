@@ -2,14 +2,15 @@
 
 # usage
 # 1. put this script into the demo dir
-# 2. make sure its executable "chmod +x update_ffa_frags.sh"
-# 3. update aws configuration below
+# 2. update the configuration below
+# 3. make sure its executable "chmod +x update_ffa_frags.sh"
 # 4. run it "./update_ffa_frags.sh"
 
 # aws configuration
 export AWS_ACCESS_KEY_ID="GET_FROM_XANTOM"
 export AWS_SECRET_ACCESS_KEY="GET_FROM_XANTOM"
 export AWS_DEFAULT_REGION="eu-north-1"
+FFA_PORT=27500
 
 # prerequisites
 if ! command -v aws &> /dev/null; then
@@ -27,19 +28,29 @@ if ! command -v inotifywait &> /dev/null; then
     sudo apt install -y inotify-tools
 fi
 
-# run whenever a ffa_*.txt is created in the current dir
+# run whenever a file is created in the current dir
 inotifywait -m -e close_write --format "%f" "." | while read FILE
 do
-    if [[ "$FILE" == ffa_*.txt ]]; then
-        # summarize frags per player
-        jq -s '[.[] | .players[] | {name: .name, frags: .stats.frags}] |
-            group_by(.name) |
-            map({name: .[0].name, frags: map(.frags) | add})
-            | sort_by(.frags) | reverse
-        ' ffa_*.txt > ffa_frags.json
+    # skip non-ffa files
+    [[ "$FILE" == ffa_*.txt ]] || continue
 
-        # upload to aws s3
-        # public url: https://qhlan2026.s3.eu-north-1.amazonaws.com/ffa_frags.json
-        aws s3 cp ffa_frags.json s3://qhlan2026/ffa_frags.json --content-type application/json --cache-control "no-store, no-cache, must-revalidate, max-age=0" --expires 0
-    fi
+    # check port of the triggering file
+    PORT_MATCH=$(jq --argjson port "$FFA_PORT" 'if .port == $port then 1 else 0 end' "$FILE")
+    [[ "$PORT_MATCH" -eq 1 ]] || continue
+
+    # summarize frags per player
+    # only include ffa_*.txt files matching the configured ffa port
+    jq --argjson port "$FFA_PORT" -s '
+        map(select(.port == $port)) |
+        map(.players[] | {name: .name, frags: .stats.frags}) |
+        group_by(.name) |
+        map({name: .[0].name, frags: map(.frags) | add}) |
+        sort_by(.frags) | reverse
+    ' ffa_*.txt > ffa_frags.json
+
+    # upload to AWS S3
+    aws s3 cp ffa_frags.json s3://qhlan2026/ffa_frags.json \
+        --content-type application/json \
+        --cache-control "no-store, no-cache, must-revalidate, max-age=0" \
+        --expires 0
 done
