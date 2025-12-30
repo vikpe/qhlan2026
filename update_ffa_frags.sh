@@ -3,7 +3,7 @@
 # usage
 # 1. put this script into the demo dir
 # 2. make sure its executable "chmod +x update_ffa_frags.sh"
-# 3. update aws configuration
+# 3. update aws configuration below
 # 4. run it "./update_ffa_frags.sh"
 
 # aws configuration
@@ -39,6 +39,7 @@ do
         ' *.txt > ffa_frags.json
 
         # upload to aws s3
+        # public url: https://qhlan2026.s3.eu-north-1.amazonaws.com/ffa_frags.json
         aws s3 cp ffa_frags.json s3://qhlan2026/ffa_frags.json --content-type application/json --cache-control "no-store, no-cache, must-revalidate, max-age=0" --expires 0
     fi
 done
