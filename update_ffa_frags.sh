@@ -53,4 +53,11 @@ do
         --content-type application/json \
         --cache-control "no-store, no-cache, must-revalidate, max-age=0" \
         --expires 0
+
+    # exit if ffa tournament is over
+    CURRENT_DATE=$(date +%Y-%m-%d)
+
+    if [[ "$CURRENT_DATE" == "2026-01-11" ]]; then
+        exit 0
+    fi
 done
